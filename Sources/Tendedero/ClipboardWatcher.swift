@@ -59,23 +59,38 @@ final class ClipboardWatcher {
         timer = nil
     }
 
+    /// Whether every item is free of the excluded types.
+    private static func accepts(_ items: [NSPasteboardItem], exclusions: Set<NSPasteboard.PasteboardType>) -> Bool {
+        guard !items.isEmpty else { return false }
+        return items.allSatisfy { exclusions.isDisjoint(with: $0.types) }
+    }
+
     private func check() {
         let pb = NSPasteboard.general
         let count = pb.changeCount
         guard count != lastCount else { return }
         lastCount = count
-        guard let items = pb.pasteboardItems, !items.isEmpty,
-              items.allSatisfy({ Self.ignoredTypes.isDisjoint(with: $0.types) }),
+        guard let items = pb.pasteboardItems,
               let type = pb.availableType(from: [.png, .tiff]),
               let data = pb.data(forType: type), data.count <= Self.maxBytes,
               pb.changeCount == count else { return }
+        // Two ways in: watching every copied image, or CleanShot alone. The
+        // CleanShot exception forgives only the file URL every capture
+        // carries; private and transient copies still do not come through.
+        let general = Self.isEnabled && Self.accepts(items, exclusions: Self.ignoredTypes)
+        let cleanShot = CleanShotCapture.isEnabled && CleanShotCapture.matches(items)
+            && Self.accepts(items, exclusions: Self.ignoredTypes.subtracting([.fileURL]))
+        guard general || cleanShot else { return }
+        let needsCleanShot = !general
         // Decoding a large image takes a moment, so it happens off the main thread.
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let png = ClipboardWatcher.png(from: data, type: type)
             DispatchQueue.main.async {
-                // Copied over again in the meantime: that copy is the one that counts.
-                guard let png, NSPasteboard.general.changeCount == count else { return }
-                self?.save(png)
+                // Copied over again, or turned off, in the meantime: nothing to do.
+                guard let self, self.timer != nil, let png,
+                      NSPasteboard.general.changeCount == count,
+                      (!needsCleanShot || CleanShotCapture.isEnabled) else { return }
+                self.save(png)
             }
         }
     }

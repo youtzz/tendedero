@@ -167,11 +167,23 @@ final class Line: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
             if self?.copiedID == id { self?.copiedID = nil }
         }
+        // The photo has done its job: copied, it steps off the line. From
+        // Tendedero's own folder that means the Trash keeps it; anywhere
+        // else the file simply leaves the line.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            self?.discard(id)
+        }
     }
 
     func open(_ id: UUID) {
         guard let item = items.first(where: { $0.id == id }) else { return }
         NSWorkspace.shared.open(item.url)
+    }
+
+    /// Hands a photo to CleanShot's own tools, through its URL scheme.
+    func handToCleanShot(_ command: String, _ id: UUID) {
+        guard let item = items.first(where: { $0.id == id }) else { return }
+        CleanShotTools.open(command, file: item.url)
     }
 
     /// Moves the file to the Trash and takes the photo off the line. When a

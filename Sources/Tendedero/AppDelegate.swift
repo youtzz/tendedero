@@ -23,6 +23,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var hotKey: HotKey?
     private var cancellables = Set<AnyCancellable>()
     private var mouseTimer: Timer?
+    /// A downward pull over a card throws it off the line, the way
+    /// CleanShot's list dismisses a capture with a swipe. The pull builds up
+    /// here: see `scrollThrows`.
+    private static let throwTravel: CGFloat = 36
+    private var throwSoFar: CGFloat = 0
+    private var throwTarget: UUID?
+    private var throwAt = Date.distantPast
+    private var throwSettledAt = Date.distantPast
 
     /// Whether the panel is ordered in. It can be in and still tucked away
     /// above the top edge, like an auto-hiding Dock.
@@ -74,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         restoreSettingsOnTermination()
         startWatcher()
         clipboardWatcher = ClipboardWatcher { [weak self] url in self?.hangCapture(url) }
-        if ClipboardWatcher.isEnabled { clipboardWatcher.start() }
+        if ClipboardWatcher.isEnabled || CleanShotCapture.isEnabled { clipboardWatcher.start() }
 
         registerShortcut()
 
@@ -84,10 +92,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Markup.shared.onSaved = { [weak self] url in self?.line.reloadThumbnail(for: url) }
         Trim.shared.onSaved = { [weak self] url in self?.line.reloadThumbnail(for: url) }
         panel.onScroll = { [weak self] event in
-            // Sideways on a trackpad, or the wheel of a mouse.
+            guard let self else { return }
+            // A downward pull over a card throws it off the line. Anything
+            // else moves the line itself: sideways on a trackpad, or the
+            // wheel of a mouse.
+            if self.scrollThrows(event) { return }
             let delta = abs(event.scrollingDeltaX) >= abs(event.scrollingDeltaY)
                 ? event.scrollingDeltaX : event.scrollingDeltaY
-            self?.line.scroll(by: event.hasPreciseScrollingDeltas ? delta : delta * 12)
+            self.line.scroll(by: event.hasPreciseScrollingDeltas ? delta : delta * 12)
         }
         line.onFall = { [weak self] item in self?.fall(item) }
 
@@ -232,7 +244,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Watching the clipboard is opt in, from the menu bar only.
     private func setClipboard(_ on: Bool) {
         ClipboardWatcher.isEnabled = on
-        if on { clipboardWatcher.start() } else { clipboardWatcher.stop() }
+        if on { clipboardWatcher.start() } else if !CleanShotCapture.isEnabled { clipboardWatcher.stop() }
+        updateStatusIcon()
+    }
+
+    /// CleanShot X, from the menu bar: every capture hangs the instant it is
+    /// taken, saved or not. Its own switch, so watching every copied image
+    /// stays opt in.
+    private func setCleanShot(_ on: Bool) {
+        CleanShotCapture.isEnabled = on
+        if on { clipboardWatcher.start() } else if !ClipboardWatcher.isEnabled { clipboardWatcher.stop() }
         updateStatusIcon()
     }
 
@@ -550,6 +571,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    /// A downward pull over a card throws it off the line, the way CleanShot
+    /// dismisses a capture with a swipe. It takes `throwTravel` points of
+    /// pull, so a nudge swings back and nothing happens, and the pull is
+    /// never spent on moving the line. Returns true when the event belonged
+    /// to the throw.
+    private func scrollThrows(_ event: NSEvent) -> Bool {
+        let now = Date()
+        // One wheel notch is a line, not a point, and counts like the line
+        // counts it. A positive deltaY is the pull that drags content down,
+        // which is what the hand is doing under natural scrolling.
+        let pull = event.scrollingDeltaY * (event.hasPreciseScrollingDeltas ? 1 : 12)
+        guard isRevealed, pull > 0, !GrabView.isDragging, !GrabView.isShowingMenu,
+              let id = cardUnderPointer() else {
+            throwSoFar = 0
+            throwTarget = nil
+            return false
+        }
+        // Momentum is the tail of a pull already judged: it neither throws
+        // nor moves the line under a card.
+        guard event.momentumPhase == [] else { return true }
+        // A fresh pull, after a pause or on another card, starts at nothing.
+        if id != throwTarget || now.timeIntervalSince(throwAt) > 0.4 {
+            throwTarget = id
+            throwSoFar = 0
+        }
+        throwAt = now
+        // Just thrown: the rest of this pull belongs to the fall.
+        guard now >= throwSettledAt else {
+            throwSoFar = 0
+            return true
+        }
+        throwSoFar += pull
+        guard throwSoFar >= Self.throwTravel else { return true }
+        throwSoFar = 0
+        throwSettledAt = now.addingTimeInterval(0.45)
+        // The card goes exactly the way the corner cross sends it.
+        line.discard(id)
+        return true
+    }
+
+    /// The card under the pointer, matched the same way clicks are matched
+    /// to photos in `updateMousePassThrough`.
+    private func cardUnderPointer() -> UUID? {
+        let local = panel.convertPoint(fromScreen: NSEvent.mouseLocation)
+        let flipped = CGPoint(x: local.x, y: panel.frame.height - local.y)
+        return line.hitRects.first { $0.value.insetBy(dx: -4, dy: -4).contains(flipped) }?.key
+    }
+
     // MARK: Shortcut
 
     private func registerShortcut() {
@@ -616,7 +685,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// The shirt fills in while copied images are hung, so it shows at a
     /// glance that the clipboard is being watched.
     private func updateStatusIcon() {
-        let on = ClipboardWatcher.isEnabled
+        let on = ClipboardWatcher.isEnabled || CleanShotCapture.isEnabled
         let description = on ? L("Tendedero, hanging copied images") : "Tendedero"
         let image = NSImage(systemSymbolName: on ? "tshirt.fill" : "tshirt", accessibilityDescription: description)
         image?.isTemplate = true
@@ -655,6 +724,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         clipboard.state = ClipboardWatcher.isEnabled ? .on : .off
         clipboard.toolTip = L("Images you copy hang on the line too")
         menu.addItem(clipboard)
+
+        let cleanShotItem = NSMenuItem(title: L("CleanShot screenshots"), action: nil, keyEquivalent: "")
+        let cleanShotMenu = NSMenu()
+        cleanShotMenu.autoenablesItems = false
+        let cleanShot = ClosureMenuItem(L("Handle CleanShot screenshots")) { [weak self] in
+            self?.setCleanShot(!CleanShotCapture.isEnabled)
+        }
+        cleanShot.state = CleanShotCapture.isEnabled ? .on : .off
+        cleanShot.toolTip = L("CleanShot screenshots hang the instant you take them, saved or not")
+        cleanShotMenu.addItem(cleanShot)
+        cleanShotItem.submenu = cleanShotMenu
+        menu.addItem(cleanShotItem)
 
         let bringDown = NSMenuItem(title: L("Bring the line down"), action: nil, keyEquivalent: "")
         let options = NSMenu()

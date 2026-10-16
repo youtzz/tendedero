@@ -48,6 +48,7 @@
 
 /* GrabArea */
 "Copy" = "Copy";
+"Save" = "Save";
 "Open" = "Open";
 "Quick Look" = "Quick Look";
 "Markup" = "Markup";
@@ -64,3 +65,12 @@
 
 /* PeggedView */
 "Copied" = "Copied";
+
+// CleanShot X integration
+"CleanShot screenshots" = "CleanShot screenshots";
+"Handle CleanShot screenshots" = "Handle CleanShot screenshots";
+"CleanShot screenshots hang the instant you take them, saved or not" = "CleanShot screenshots hang the instant you take them, saved or not";
+"CleanShot" = "CleanShot";
+"Edit in CleanShot" = "Edit in CleanShot";
+"Pin in CleanShot" = "Pin in CleanShot";
+"Send to CleanShot overlay" = "Send to CleanShot overlay";

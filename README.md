@@ -1,173 +1,66 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
-  <img src="docs/images/hero-light.png" alt="Tendedero. Screenshots, hung out to dry. Three screenshots in glass frames hang from a thin line under the macOS menu bar.">
-</picture>
+# tendedero（CleanShot X 魔改版）
 
-<h3 align="center"><a href="https://tendedero.app/?lang=en">Try it in your browser at tendedero.app&nbsp;&rsaquo;</a></h3>
+每一张截图都先挂在屏幕上方那条晾衣绳上。把指针停在菜单栏，绳子滑下来；移开，它就收回去。
 
-<p align="center">
-  Free and open source. For macOS 14 and later.
-  <br>
-  <a href="../../releases/latest">Download&nbsp;&rsaquo;</a>
-  &nbsp;&nbsp;
-  <a href="#build-from-source">Build from source&nbsp;&rsaquo;</a>
-  <br><br>
-  English&nbsp;·&nbsp;<a href="docs/i18n/README.es.md">Español</a>&nbsp;·&nbsp;<a href="docs/i18n/README.fr.md">Français</a>&nbsp;·&nbsp;<a href="docs/i18n/README.pt-BR.md">Português (Brasil)</a>&nbsp;·&nbsp;<a href="docs/i18n/README.ja.md">日本語</a>&nbsp;·&nbsp;<a href="docs/i18n/README.ko.md">한국어</a>&nbsp;·&nbsp;<a href="docs/i18n/README.zh-Hans.md">简体中文</a>
-</p>
+macOS 14 以上，免费开源。改自 [Tendedero](https://github.com/alejandrobujan/tendedero) 1.5.0，MIT 授权。
 
-<br>
+这是**个人魔改 fork**，特色是**与 CleanShot X 深度联动**：用 CleanShot X 截图（哪怕没点保存），也会立刻挂上晾衣绳。非官方项目，只公开源码，供自行编译使用。
 
-## Out of sight. Within reach.
+## 跟原版不一样的地方
 
-Every screenshot you take hangs on a line just above your screen.
-Rest the pointer in the menu bar and it glides down. Move away and it's gone.
+- **CleanShot X 截图即上绳**。CleanShot X 每次截图都会把「图片 + 媒体库文件 URL」复制到剪贴板，本版认出这个特征，CleanShot 截图无论保存与否都立刻挂上绳。与「挂上复制的图片」互不相干——普通复制的图片不受影响。开关在菜单栏：「CleanShot 截图」→「接管 CleanShot 截图」。
+- **委托 CleanShot X 原生功能**。卡片右键菜单里多了「CleanShot ▸」：在 CleanShot 中编辑、在 CleanShot 中钉住、发送到 CleanShot 浮窗；悬停按钮里的 📌 和 ✎ 走同一个通道。
+- **悬停按钮组**，样式照 CleanShot X 自己的浮层：鼠标停在卡片上，出现 ✕（扔掉）、📌（CleanShot 钉住）、✎（CleanShot 编辑）、居中的「复制 / 保存」胶囊（保存仅对收件箱文件出现，存到桌面）。录像只显示 ✕、复制、保存。
+- **复制即下线**。任何复制动作（点一下卡片、点「复制」、用菜单）之后约 0.6 秒，卡片自动下线；收件箱文件随之进废纸篓（CleanShot X 媒体库里还有底档），其它来源只下线、不删文件。单击会先等一个系统双击间隔，所以双击打开预览时不会误触复制。
+- **往下滚扔卡**。鼠标停在卡片上、往下滚约两格（累计约 36pt），卡片坠落下线，约等于点 ✕；没拉够就没事，惯性滚动不接力。
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/demo-dark.gif">
-  <img src="docs/images/demo-light.gif" alt="The pointer rests against the top edge, the line slides down with three screenshots swinging gently, a click copies one, and the line tucks away when the pointer leaves.">
-</picture>
+## 使用前提
 
-<br>
-<br>
+- 已安装 CleanShot X；在其 after capture（截图后）动作里保持勾选 **Copy file to clipboard**——截图「不保存」也能上绳，靠的就是这个剪贴板事件
+- 首次从卡片调 CleanShot 功能时，macOS 可能弹一次 URL scheme 授权，点允许
 
-## A gesture for everything.
+## 操作方式
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/bento-dark.png">
-  <img src="docs/images/bento-light.png" alt="Click to copy. Hold to mark up. Drag to share. Let it go.">
-</picture>
-
-<br>
-<br>
-
-| | |
+| 操作 | 效果 |
 |:--|:--|
-| Click | Copy the image. |
-| Press and hold | Open it in Markup. |
-| Double click | Open it in Preview. |
-| Force click | Take a quick look. |
-| Drag into an app | Send a copy. It stays on the line. |
-| Drag into a folder | Keep it there. It leaves the line. |
-| Drag to the Trash, or click the cross | Let it go. |
-| Rest the pointer in the menu bar | Bring the line down on that screen. |
-| Click anything in the menu bar | Put it away. |
-| <kbd>⌃</kbd>&thinsp;<kbd>⌥</kbd>&thinsp;<kbd>T</kbd> | Show or hide the line. Change it under Shortcut in the menu bar. |
+| 点一下 | 复制图片；约 0.6 秒后卡片自动下线 |
+| 双击 | 打开预览——不会先复制，也不下线 |
+| 按住不放 | 在系统的「标记」里编辑（录像则进剪辑） |
+| 用力按 | 快速查看 |
+| 悬停卡片 | 出现 ✕ / 📌 / ✎ / 复制 / 保存 |
+| 悬停时往下滚 | 卡片坠落下线 |
+| 拖进 App | 送一份拷贝过去，卡片留在绳上 |
+| 拖进文件夹 | 存进文件夹，卡片下线 |
+| 拖到废纸篓，或点 ✕ | 扔掉 |
+| 右键卡片 | 复制、打开、快速查看、标记、在访达中显示、CleanShot ▸、存储到桌面、丢弃 / 取下 |
+| 指针停在菜单栏 | 放下晾衣绳 |
+| ⌃⌥T | 显示或隐藏晾衣绳，可在菜单栏「快捷键」里改 |
 
-<br>
+其余（登录时打开、声音、大小、监视文件夹等）都在菜单栏里。
 
-## Your Desktop. Finally clear.
+## 怎么运作
 
-Hand Tendedero your screenshots<sup>1</sup> and they skip the Desktop
-entirely. No floating thumbnail. No five-second wait. Each capture hangs
-the instant you take it, and only what you drag out is kept.
+第一次打开「接管截图」时，macOS 的截图设置会被临时接管：关掉右下角浮动缩略图、把新截图存进 App 自己的收件箱文件夹、截图一按就上绳。你原来的设置会被记下，退出 App 或关掉这个选项时自动还回去。
 
-Screen recordings hang there too, with a play button over them.
-Press and hold one to trim it.
+CleanShot X 的截图走剪贴板通道：认出 CleanShot 的特征后直接上绳，不碰你的原文件；下线时处理的也只是收件箱里的副本。不联网、无账号、无分析，所有图片都留在你的 Mac 上。
 
-Same shortcuts. Same muscle memory. Just less mess.
-
-<br>
-
-## Copied images too.
-
-Take a screenshot with <kbd>⌃</kbd> held, or copy an image in Preview, and it
-hangs on the line like any other. Turn on Hang copied images in the menu bar
-and the shirt fills in while it is on. Only images: anything copied along
-with text or a file, and anything a password manager marks as private, is
-left alone.
-
-<br>
-
-## Private by design.
-
-No account. No network. No analytics.
-Tendedero runs entirely on your Mac, and your screenshots never leave it.
-
-<br>
-
-## Tech Specs
-
-| | |
-|:--|:--|
-| **Compatibility** | macOS 14 Sonoma or later, on Apple silicon and Intel. Designed for macOS 27. |
-| **Size** | 1.7 MB |
-| **Languages** | English, Spanish, French, Portuguese (Brazil), Japanese, Korean, Chinese (Simplified), Turkish, Azerbaijani |
-| **Built with** | Swift, AppKit and SwiftUI |
-| **Network access** | None |
-| **Price** | Free |
-| **License** | MIT for the code. The name and icon are not included. |
-
-<br>
-
-## Install
-
-Download the disk image from the [latest release](../../releases/latest),
-open it and drag Tendedero to Applications. Or install it with Homebrew:
+## 从源码编译
 
 ```sh
-brew install --cask alejandrobujan/tap/tendedero
-```
-
-Tendedero is signed with a Developer ID and notarized by Apple, so it opens
-like any other app.
-
-<br>
-
-## Build from source
-
-```sh
-git clone git@github.com:alejandrobujan/tendedero.git
+git clone https://github.com/youtzz/tendedero.git
 cd tendedero
 scripts/build-app.sh
 open build/Tendedero.app
 ```
 
-Requires the Swift toolchain. Xcode is optional. With the Command Line Tools for macOS 27, the script falls back to the macOS 26 SDK they install alongside, because the new SDK needs a SwiftUI macro plugin only Xcode includes. Local builds are signed ad hoc,
-so macOS asks again for access to the Desktop after each rebuild.
+需要 Swift 工具链（Xcode 可有可无）。本机构建用 ad-hoc 签名，所以每次重新编译后 macOS 可能再问一次「桌面文件夹」访问权限，点允许即可。要装进「应用程序」文件夹：
 
-<details>
-<summary>Inside the app</summary>
-<br>
+```sh
+ditto build/Tendedero.app /Applications/Tendedero.app
+```
 
-| File | Role |
-|:--|:--|
-| `AppDelegate.swift` | Menu bar, shortcut, revealing and tucking away the line |
-| `LinePanel.swift` | The transparent strip along the top of the screen |
-| `LineView.swift` | The line and where each photo hangs |
-| `PeggedView.swift` | One photo: glass frame, clip, swing and breeze |
-| `GrabArea.swift` | Click, long press, drag and drop |
-| `ScreenshotWatcher.swift` | Notices new screenshots |
-| `ClipboardWatcher.swift` | Notices images copied to the clipboard |
-| `Inbox.swift` | Takes over screenshot settings and puts them back |
-| `Markup.swift` | Opens the system Markup editor and saves the result |
-| `Trim.swift` | Trims a screen recording and saves the result |
-| `FullScreen.swift` | Knows when to stay hidden |
-| `Line.swift` | What is hanging, and what you can do with it |
+## 授权与致谢
 
-Every image here, the icon included, is drawn in code by
-`scripts/make-icon.swift` and `scripts/make-readme-art.swift`.
-`scripts/make-dmg.sh` builds the disk image for releases.
+改自 [Alejandro Buján](https://alejandrobujan.com) 的 [Tendedero](https://github.com/alejandrobujan/tendedero) 1.5.0；原始代码按 MIT 授权，版权声明保留在 [LICENSE](LICENSE)。Tendedero 的名称与图标不在 MIT 授权范围内——本 fork 为非官方个人版本，不代表上游，也不发布二进制，只公开源码供自行编译。
 
-Translations live in `Sources/Tendedero/Resources`, one `.lproj` folder per
-language. `swift scripts/check-strings.swift` checks that none is missing.
-
-</details>
-
-<br>
-
----
-
-<sub>
-1. On first launch, Tendedero offers to handle your screenshots. If you accept, it turns off the floating thumbnail and saves new screenshots to its own folder, two settings also found under Options in Cmd+Shift+5. Your previous settings are saved and restored when Tendedero quits or the option is turned off from the menu bar. Tendedero hides automatically while an app is in full screen.
-</sub>
-
-<br>
-<br>
-
-<p align="center">
-  <img src="docs/images/icon.png" width="64" height="64" alt="">
-  <br>
-  <sub>The code is MIT licensed. The Tendedero name and icon are not, so forks need their own. See <a href="LICENSE">LICENSE</a>.</sub>
-  <br>
-  <sub>Designed and built by <a href="https://alejandrobujan.com">Alejandro Buján</a>.</sub>
-</p>
+`docs/` 下的图片和多语言说明来自上游原版，保留供参考，内容描述的是原版。

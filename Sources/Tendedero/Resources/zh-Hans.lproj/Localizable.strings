@@ -46,6 +46,7 @@
 
 /* GrabArea */
 "Copy" = "复制";
+"Save" = "保存";
 "Open" = "打开";
 "Quick Look" = "快速查看";
 "Markup" = "标记";
@@ -62,3 +63,12 @@
 
 /* PeggedView */
 "Copied" = "已复制";
+
+// CleanShot X 集成
+"CleanShot screenshots" = "CleanShot 截图";
+"Handle CleanShot screenshots" = "接管 CleanShot 截图";
+"CleanShot screenshots hang the instant you take them, saved or not" = "CleanShot 截图拍下即挂上绳，无需保存";
+"CleanShot" = "CleanShot";
+"Edit in CleanShot" = "在 CleanShot 中编辑";
+"Pin in CleanShot" = "在 CleanShot 中钉住";
+"Send to CleanShot overlay" = "发送到 CleanShot 浮窗";
